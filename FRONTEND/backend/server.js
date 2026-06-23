@@ -37,7 +37,7 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://melodious-dodol-489460.netlify.app",
+    "https://YOUR-FRONTEND-VERCEL-URL.vercel.app",
     "http://localhost:5173"
   ],
   credentials: true
@@ -88,10 +88,6 @@ app.get("/", (req, res) => {
 });
 
 
-// ================= START SERVER =================
+// ================= VERCEL EXPORT =================
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+export default app;
