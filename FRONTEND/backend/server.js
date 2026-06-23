@@ -37,7 +37,7 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://YOUR-NETLIFY-SITE.netlify.app",
+    "https://melodious-dodol-489460.netlify.app",
     "http://localhost:5173"
   ],
   credentials: true
