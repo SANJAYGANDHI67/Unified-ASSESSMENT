@@ -61,8 +61,14 @@ export default function AssessmentDetails() {
   if (error || !assessment)
     return <div className="p-8 text-red-600">{error}</div>;
 
-  const isStartDisabled =
-    assessment.status !== "PUBLISHED" || starting;
+  
+
+console.log("Assessment Object:", assessment);
+console.log("Assessment Status:", assessment.status);
+
+
+    const isStartDisabled =
+  assessment.status?.toLowerCase() !== "published" || starting;
 
   /* ======================
      UI

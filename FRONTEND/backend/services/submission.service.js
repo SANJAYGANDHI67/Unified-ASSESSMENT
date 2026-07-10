@@ -1,5 +1,13 @@
 import pool from "../config/db.js";
 
+
+
+import { evaluateDescriptiveAnswer } from "./evaluationEngine.service.js";
+import {
+  saveAIFeedback,
+  getAIFeedback,
+} from "./aiFeedback.service.js";
+
 /* =====================================================
    SUBMISSION CORE
 ===================================================== */
@@ -123,7 +131,7 @@ export const getSubmittedSubmissionsByAssessment = async (assessmentId) => {
     FROM submissions s
     JOIN users u ON u.id = s.student_id
     WHERE s.assessment_id = ?
-      AND s.status = 'submitted'
+      AND s.status IN ('submitted', 'evaluated')
     ORDER BY s.submitted_at DESC
     `,
     [assessmentId]
@@ -210,4 +218,139 @@ export const submitAssessment = async (submissionId) => {
     `,
     [submissionId]
   );
+};
+
+
+/* =====================================================
+   SUBMISSION DETAILS FOR EVALUATION
+===================================================== */
+
+export const getSubmissionDetails = async (submissionId) => {
+  const [rows] = await pool.execute(
+    `
+    SELECT
+      s.id AS submission_id,
+      s.assessment_id,
+
+      u.id AS student_id,
+      u.name AS student_name,
+      u.email AS student_email,
+
+      q.id AS question_id,
+      q.question,
+      q.question_type,
+      q.marks,
+      q.options,
+      q.correct_option,
+      q.reference_answer,
+
+      a.answer AS student_answer
+
+    FROM submissions s
+
+    JOIN users u
+      ON u.id = s.student_id
+
+    JOIN answers a
+      ON a.submission_id = s.id
+
+    JOIN questions q
+      ON q.id = a.question_id
+
+    WHERE s.id = ?
+
+    ORDER BY q.id
+    `,
+    [submissionId]
+  );
+for (const row of rows) {
+
+  if (row.question_type !== "descriptive") continue;
+
+  // Already evaluated?
+  let ai = await getAIFeedback(
+    submissionId,
+    row.question_id
+  );
+
+  if (!ai) {
+
+    const result =
+      await evaluateDescriptiveAnswer({
+        question: row.question,
+        referenceAnswer: row.reference_answer,
+        studentAnswer: row.student_answer,
+        maxMarks: row.marks,
+      });
+
+    await saveAIFeedback({
+      submissionId,
+      questionId: row.question_id,
+      aiScore: result.score,
+      aiFeedback: result.feedback,
+    });
+
+    ai = {
+      ai_score: result.score,
+      ai_feedback: result.feedback,
+    };
+  }
+
+  row.ai_score = ai.ai_score;
+  row.ai_feedback = ai.ai_feedback;
+}
+
+
+
+
+
+
+
+
+
+
+
+// Existing AI feedback (if already evaluated)
+const existingFeedback = await getAIFeedback(submissionId);
+
+for (const row of rows) {
+
+  if (row.question_type !== "descriptive") {
+    continue;
+  }
+
+  let ai = existingFeedback.find(
+    (f) => f.question_id === row.question_id
+  );
+
+  // Generate AI evaluation only once
+  if (!ai) {
+    const result = await evaluateDescriptiveAnswer({
+      question: row.question,
+      referenceAnswer: row.reference_answer,
+      studentAnswer: row.student_answer,
+      maxMarks: row.marks,
+    });
+
+    await saveAIFeedback({
+      submissionId,
+      questionId: row.question_id,
+      aiScore: result.score,
+      aiFeedback: result.feedback,
+    });
+
+    ai = {
+      ai_score: result.score,
+      ai_feedback: result.feedback,
+    };
+  }
+
+  row.ai_score = ai.ai_score;
+  row.ai_feedback = ai.ai_feedback;
+}
+
+
+return rows;
+  
+  
 };

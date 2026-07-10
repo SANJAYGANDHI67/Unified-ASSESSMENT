@@ -104,15 +104,15 @@ export default function EvaluateSubmissions() {
 
                     <td className="p-4 text-right">
                       <button
-                        onClick={() =>
-                          navigate(
-                            `/instructor/evaluate/${s.id}`
-                          )
-                        }
-                        className="text-blue-600 hover:underline"
-                      >
-                        Evaluate
-                      </button>
+  onClick={() =>
+    navigate(
+      `/instructor/evaluate/submission/${s.id}`
+    )
+  }
+  className="text-blue-600 hover:underline"
+>
+  Evaluate
+</button>
                     </td>
                   </tr>
                 );

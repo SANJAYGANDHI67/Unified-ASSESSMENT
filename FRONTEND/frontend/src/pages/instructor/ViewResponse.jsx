@@ -7,166 +7,216 @@ export default function ViewResponse() {
   const navigate = useNavigate();
   const { submissionId } = useParams();
 
-  const [loading, setLoading] = useState(false);
+  const [questions, setQuestions] = useState([]);
   const [fetching, setFetching] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  /* ======================
-     DATA
-  ====================== */
-  const [question, setQuestion] = useState("");
-  const [studentAnswer, setStudentAnswer] = useState("");
-
-  const [aiScore, setAiScore] = useState(0);
-  const [maxMarks, setMaxMarks] = useState(0);
-  const [aiFeedback, setAiFeedback] = useState("");
 
   const [finalScore, setFinalScore] = useState(0);
   const [feedback, setFeedback] = useState("");
 
-  /* ======================
-     FETCH RESPONSE + AI EVAL
-  ====================== */
   useEffect(() => {
     async function load() {
       try {
-        const res = await api.get(`/evaluations/${submissionId}`);
+        const res = await api.get(`/submissions/${submissionId}/details`);
 
-        setQuestion(res.data.question);
-        setStudentAnswer(res.data.answer);
+        setQuestions(res.data);
 
-        setAiScore(res.data.ai_score);
-        setMaxMarks(res.data.max_marks);
-        setAiFeedback(res.data.ai_feedback || "");
+        let total = 0;
+        let score = 0;
 
-        // default instructor score = AI score
-        setFinalScore(res.data.ai_score);
-      } catch (e) {
-        console.error(e);
+        res.data.forEach((q) => {
+          total += q.marks;
+
+          if (
+            q.question_type === "mcq" &&
+            q.student_answer === q.correct_option
+          ) {
+            score += q.marks;
+          }
+        });
+
+        setFinalScore(score);
+      } catch (err) {
+        console.error(err);
         setError("Failed to load submission evaluation");
       } finally {
         setFetching(false);
       }
     }
 
-    if (submissionId) load();
+    load();
   }, [submissionId]);
 
-  /* ======================
-     SUBMIT FINAL EVAL
-  ====================== */
-  const handleSubmitEvaluation = async () => {
-    if (finalScore < 0 || finalScore > maxMarks) {
-      alert(`Score must be between 0 and ${maxMarks}`);
-      return;
-    }
+  const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
 
+  const handleSubmit = async () => {
     try {
       setLoading(true);
 
       await api.post(`/evaluations/${submissionId}/submit`, {
-        final_score: Number(finalScore),
-        feedback: feedback.trim(),
+        final_score: finalScore,
+        feedback,
       });
 
-      navigate("/instructor/tests", { replace: true });
+      alert("Evaluation Submitted");
+
+      navigate(-1);
     } catch (err) {
-      console.error("SUBMIT EVALUATION ERROR:", err);
+      console.error(err);
       alert("Failed to submit evaluation");
     } finally {
       setLoading(false);
     }
   };
 
-  if (fetching) return <div className="p-8">Loading evaluation...</div>;
-  if (error) return <div className="p-8 text-red-600">{error}</div>;
+  if (fetching) return <div className="p-6">Loading...</div>;
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-6">
+    <div className="p-6 space-y-6">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            Evaluate Student Response
-          </h1>
-          <p className="text-sm text-gray-500">
-            AI provides suggestions · Instructor makes final decision
-          </p>
-        </div>
+      <div className="flex justify-between">
+        <h1 className="text-2xl font-bold">
+          Evaluate Submission
+        </h1>
 
-        <button
-          onClick={() => navigate(-1)}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          ← Back
-        </button>
+        <Button onClick={() => navigate(-1)}>
+          Back
+        </Button>
       </div>
 
-      {/* QUESTION */}
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
-        <h3 className="text-sm font-semibold mb-2">Question</h3>
-        <p>{question}</p>
-      </section>
+      {questions.map((q, index) => {
 
-      {/* STUDENT ANSWER */}
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
-        <h3 className="text-sm font-semibold mb-2">Student Answer</h3>
-        <p>{studentAnswer}</p>
-      </section>
+        const correct =
+          q.question_type === "mcq" &&
+          q.student_answer === q.correct_option;
 
-      {/* AI EVALUATION */}
-      <section className="rounded-lg border bg-blue-50 p-6">
-        <h3 className="text-sm font-semibold text-blue-800 mb-2">
-          AI Evaluation
-        </h3>
-        <p className="text-sm mb-3">{aiFeedback || "No AI feedback provided."}</p>
-        <p className="text-sm font-medium">
-          Suggested Score: {aiScore} / {maxMarks}
+        return (
+          <div
+            key={q.question_id}
+            className="border rounded-lg p-5 bg-white shadow"
+          >
+
+            <h2 className="font-semibold mb-3">
+              Q{index + 1}. {q.question}
+            </h2>
+
+            <p>
+              <b>Student Answer:</b> {q.student_answer}
+            </p>
+
+            {q.question_type === "mcq" && (
+              <>
+                <p>
+                  <b>Correct Answer:</b> {q.correct_option}
+                </p>
+
+                <p
+                  className={
+                    correct
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {correct ? "Correct" : "Wrong"}
+                </p>
+              </>
+            )}
+
+            {q.question_type === "descriptive" && (
+  <>
+    <div className="mt-4">
+      <p className="font-semibold">
+        Reference Answer
+      </p>
+
+      <p className="mt-1 text-gray-700">
+        {q.reference_answer}
+      </p>
+    </div>
+
+    <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
+
+      <h3 className="font-semibold text-blue-700">
+        AI Evaluation
+      </h3>
+
+      <p className="mt-2">
+        <b>AI Score:</b>{" "}
+        {q.ai_score ?? "Not Evaluated"} / {q.marks}
+      </p>
+
+      <p className="mt-2">
+        <b>AI Feedback:</b>
+      </p>
+
+      <p className="mt-1 text-gray-700">
+        {q.ai_feedback || "No feedback available"}
+      </p>
+
+    </div>
+  </>
+)}
+          </div>
+        );
+      })}
+
+      <div className="border rounded-lg p-5 bg-gray-50">
+
+        <h2 className="font-semibold text-lg">
+          Final Evaluation
+        </h2>
+
+        <p className="mt-2">
+          Total Marks : {totalMarks}
         </p>
-      </section>
 
-      {/* FINAL SCORE */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="rounded-lg border bg-white p-5 shadow-sm">
-          <p className="text-sm text-gray-500 mb-1">Maximum Marks</p>
-          <p className="text-lg font-semibold">{maxMarks}</p>
-        </div>
-
-        <div className="rounded-lg border bg-white p-5 shadow-sm">
-          <label className="text-sm text-gray-500 mb-1 block">
-            Instructor Final Score
+        <div className="mt-4">
+          <label className="block mb-2">
+            Final Score
           </label>
+
           <input
             type="number"
             min={0}
-            max={maxMarks}
+            max={totalMarks}
             value={finalScore}
-            onChange={(e) => setFinalScore(e.target.value)}
-            className="w-28 rounded-md border px-3 py-2 text-sm"
+            onChange={(e) =>
+              setFinalScore(Number(e.target.value))
+            }
+            className="border rounded px-3 py-2"
           />
         </div>
-      </section>
 
-      {/* FEEDBACK */}
-      <section className="rounded-lg border bg-white p-6 shadow-sm">
-        <h3 className="text-sm font-semibold mb-2">
-          Instructor Feedback (Optional)
-        </h3>
-        <textarea
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          className="w-full min-h-[120px] rounded-md border px-3 py-2 text-sm"
-          placeholder="Add qualitative feedback for the student…"
-        />
-      </section>
+        <div className="mt-4">
+          <label className="block mb-2">
+            Instructor Feedback
+          </label>
 
-      {/* ACTION */}
-      <div className="flex justify-end">
-        <Button onClick={handleSubmitEvaluation} disabled={loading}>
-          {loading ? "Submitting..." : "Submit Final Evaluation"}
-        </Button>
+          <textarea
+            rows={4}
+            value={feedback}
+            onChange={(e) =>
+              setFeedback(e.target.value)
+            }
+            className="border rounded w-full p-3"
+          />
+        </div>
+
+        <div className="mt-5">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading
+              ? "Submitting..."
+              : "Submit Final Evaluation"}
+          </Button>
+        </div>
+
       </div>
+
     </div>
   );
 }

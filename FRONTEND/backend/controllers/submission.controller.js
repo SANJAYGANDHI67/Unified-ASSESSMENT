@@ -170,6 +170,46 @@ export const getSubmissionsForEvaluation = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =====================================================
+   INSTRUCTOR — SUBMISSION DETAILS
+===================================================== */
+
+export const getSubmissionDetails = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+
+    const submission =
+      await submissionService.getSubmissionById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ error: "Submission not found" });
+    }
+
+    const details =
+      await submissionService.getSubmissionDetails(submissionId);
+
+    res.json(details);
+
+  } catch (error) {
+    console.error("Get submission details error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 /* =====================================================
    INSTRUCTOR — ALL SUBMISSIONS FOR ONE ASSESSMENT
 ===================================================== */

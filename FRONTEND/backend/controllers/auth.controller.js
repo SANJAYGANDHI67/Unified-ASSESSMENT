@@ -96,8 +96,21 @@ export const signup = async (req, res) => {
       message: "User created successfully",
       userId: result.insertId,
     });
-  } catch (err) {
-    console.error("SIGNUP ERROR:", err);
-    res.status(500).json({ message: "Signup failed" });
   }
+
+
+  catch (err) {
+  console.error("========== SIGNUP ERROR ==========");
+  console.error(err);
+  console.error("Message:", err.message);
+  console.error("Code:", err.code);
+  console.error("SQL:", err.sql);
+  console.error("Stack:", err.stack);
+
+  res.status(500).json({
+    message: err.message,
+    code: err.code,
+  });
+}
 };
+

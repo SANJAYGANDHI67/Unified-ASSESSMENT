@@ -57,6 +57,14 @@ export const createAssessment = async (req, res) => {
       syllabus_topics,
     } = req.body;
 
+    console.log("========== CREATE ASSESSMENT ==========");
+console.log("REQ BODY:");
+console.log(JSON.stringify(req.body, null, 2));
+
+console.log("QUESTION CONFIG:");
+console.log(JSON.stringify(question_config, null, 2)); 
+
+
     if (!title || !total_marks) {
       return res
         .status(400)
@@ -131,6 +139,14 @@ export const updateAssessment = async (req, res) => {
           ? JSON.stringify(req.body.syllabus_topics)
           : assessment.syllabus_topics,
     });
+      
+
+
+    console.log("========== UPDATE ASSESSMENT ==========");
+console.log(JSON.stringify(req.body, null, 2));
+
+
+
 
     res.json({ message: "Assessment updated successfully" });
   } catch (error) {

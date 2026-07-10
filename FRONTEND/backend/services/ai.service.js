@@ -2,7 +2,9 @@ import fs from "fs";
 import path from "path";
 import pool from "../config/db.js";
 import { extractTextFromPDF } from "../utils/pdf.util.js";
-import { callGemini } from "../utils/gemini.service.js";
+
+
+import { callGeminiGeneration } from "../utils/gemini.service.js";
 
 /*
 =====================================================
@@ -181,7 +183,7 @@ ${pdfContext}
   /* ======================
      6️⃣ AI CALL
   ====================== */
-  const llmText = await callGemini(prompt);
+ const llmText = await callGeminiGeneration(prompt);
   console.log("🧠 RAW AI RESPONSE:\n", llmText);
 
   let parsed;
@@ -255,8 +257,15 @@ ${pdfContext}
     const buckets = { 2: [], 5: [], 10: [], 15: [] };
 
     for (const q of parsed.descriptive) {
-      if (buckets[q.marks]) buckets[q.marks].push(q);
-    }
+  const marks = q.marks ?? q.mark;
+
+  if (buckets[marks]) {
+    buckets[marks].push({
+      ...q,
+      marks,
+    });
+  }
+}
 
     for (const mark of [2, 5, 10, 15]) {
       for (const q of buckets[mark].slice(0, descLimits[mark])) {

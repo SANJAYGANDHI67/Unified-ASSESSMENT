@@ -1,12 +1,10 @@
-import pool from "./config/db.js";
+import db from "./config/db.js";
 
-(async () => {
-  try {
-    const [rows] = await pool.execute("SHOW TABLES");
-    console.log("✅ DB CONNECTED. TABLES:", rows);
-    process.exit(0);
-  } catch (err) {
-    console.error("❌ DB ERROR:", err);
-    process.exit(1);
-  }
-})();
+try {
+  const [rows] = await db.execute("SELECT 1 AS test");
+  console.log("✅ Database connection works!");
+  console.log(rows);
+} catch (err) {
+  console.error("❌ Database connection failed:");
+  console.error(err);
+}

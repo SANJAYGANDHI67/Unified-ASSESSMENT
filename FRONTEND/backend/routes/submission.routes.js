@@ -67,4 +67,12 @@ router.get(
   submissionController.getSubmissionsForEvaluation
 );
 
+
+router.get(
+  "/:submissionId/details",
+  authenticate,
+  authorize("instructor"),
+  submissionController.getSubmissionDetails
+);
+
 export default router;

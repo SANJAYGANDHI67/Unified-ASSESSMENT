@@ -51,6 +51,12 @@ export default function ManageTests() {
   };
 
   /* =========================
+   EVALUATE ASSESSMENT
+========================= */
+const handleEvaluate = (id) => {
+  navigate(`/instructor/evaluate/${id}`);
+};
+  /* =========================
      DELETE ASSESSMENT
   ========================= */
   const handleDelete = async (id) => {
@@ -125,21 +131,28 @@ export default function ManageTests() {
                 </p>
               </div>
 
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => handleView(a.id)}
-                >
-                  View
-                </Button>
+              
+                 <div className="flex gap-3">
+  <Button
+    variant="outline"
+    onClick={() => handleView(a.id)}
+  >
+    View
+  </Button>
 
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(a.id)}
-                >
-                  Delete
-                </Button>
-              </div>
+  <Button
+    onClick={() => handleEvaluate(a.id)}
+  >
+    Evaluate
+  </Button>
+
+  <Button
+    variant="destructive"
+    onClick={() => handleDelete(a.id)}
+  >
+    Delete
+  </Button>
+</div>
             </div>
           ))}
         </div>

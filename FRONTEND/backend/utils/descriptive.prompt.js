@@ -49,13 +49,18 @@ STRICT OUTPUT RULES:
 - NO numbering
 - NO text outside JSON
 
+
 OUTPUT FORMAT:
-[
-  {
-    "question": "Question text here",
-    "marks": 5
-  }
-]
+
+{
+  "mcq": [],
+  "descriptive": [
+    {
+      "question": "Question text here",
+      "marks": 5
+    }
+  ]
+}
 
 SYLLABUS CONTENT (USE ONLY THIS):
 --------------------------------
