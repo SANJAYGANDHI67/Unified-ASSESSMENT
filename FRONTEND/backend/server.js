@@ -90,4 +90,8 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
+
+
+// ================= VERCEL EXPORT =================
+
 export default app;
