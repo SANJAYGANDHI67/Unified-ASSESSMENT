@@ -7,5 +7,12 @@ const router = express.Router();
 router.get('/stats', authenticate, authorize('admin'), adminController.getStats);
 router.get('/users', authenticate, authorize('admin'), adminController.getUsers);
 
+router.get(
+  "/logs",
+  authenticate,
+  authorize("admin"),
+  adminController.getLogs
+);
+
 export default router;
 

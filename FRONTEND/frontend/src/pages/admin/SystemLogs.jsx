@@ -26,6 +26,12 @@ export default function SystemLogs() {
     async function fetchLogs() {
       try {
         setLoading(true);
+        console.log({
+  page,
+  typeFilter,
+  dateFilter,
+  search,
+});
 
         const res = await api.get("/admin/logs", {
           params: {

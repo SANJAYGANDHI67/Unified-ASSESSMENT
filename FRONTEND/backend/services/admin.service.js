@@ -61,3 +61,78 @@ export const getUsers = async (page = 1, limit = 10) => {
     limit: safeLimit,
   };
 };
+
+/* =====================================================
+   GET SYSTEM LOGS
+===================================================== */
+export const getLogs = async (
+  page = 1,
+  limit = 10,
+  type,
+  date,
+  search
+) => {
+  const safePage = Number(page) || 1;
+  const safeLimit = Number(limit) || 10;
+  const offset = (safePage - 1) * safeLimit;
+
+  let where = [];
+  let params = [];
+
+  if (type) {
+    where.push("type = ?");
+    params.push(type);
+  }
+
+  if (date) {
+    where.push("DATE(datetime) = ?");
+    params.push(date);
+  }
+
+  if (search) {
+    where.push("(event LIKE ? OR user LIKE ?)");
+    params.push(`%${search}%`);
+    params.push(`%${search}%`);
+  }
+
+  const whereClause =
+    where.length > 0
+      ? `WHERE ${where.join(" AND ")}`
+      : "";
+
+  const [logs] = await pool.execute(
+    `
+    SELECT
+      id,
+      event,
+      user,
+      type,
+      datetime
+    FROM system_logs
+    ${whereClause}
+    ORDER BY datetime DESC
+    LIMIT ${safeLimit} OFFSET ${offset}
+    `,
+    params
+  );
+
+  const [count] = await pool.execute(
+    `
+    SELECT COUNT(*) AS total
+    FROM system_logs
+    ${whereClause}
+    `,
+    params
+  );
+
+  return {
+    logs,
+    pagination: {
+      page: safePage,
+      total: count[0].total,
+      totalPages: Math.ceil(
+        count[0].total / safeLimit
+      ),
+    },
+  };
+};

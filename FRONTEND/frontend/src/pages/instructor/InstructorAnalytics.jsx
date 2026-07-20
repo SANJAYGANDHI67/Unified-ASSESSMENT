@@ -433,7 +433,7 @@ export default function InstructorAnalytics() {
         status: activeFilters.status !== 'all' ? activeFilters.status : undefined,
         search: activeFilters.search || undefined,
       };
-      const res = await api.get('/instructor/analytics', { params });
+      const res = await api.get("/analytics")
       setData(res.data);
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Failed to load analytics data.');

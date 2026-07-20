@@ -20,7 +20,7 @@ import authRoutes from "./routes/auth.routes.js";
 import assessmentRoutes from "./routes/assessment.routes.js";
 import submissionRoutes from "./routes/submission.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
-
+import analyticsRoutes from "./routes/analytics.routes.js";
 // DASHBOARD
 import dashboardRoutes from "./routes/dashboard.routes.js";
 
@@ -67,6 +67,8 @@ app.use("/api/admin", adminRoutes);
 
 // DASHBOARD
 app.use("/api/dashboard", dashboardRoutes);
+// ANALYTICS
+app.use("/api/analytics", analyticsRoutes);
 
 // AI
 app.use("/api/ai", aiRoutes);
