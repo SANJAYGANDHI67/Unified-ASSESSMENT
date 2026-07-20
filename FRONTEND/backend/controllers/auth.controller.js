@@ -47,6 +47,18 @@ export const login = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    await db.execute(
+  `
+  INSERT INTO system_logs (event, user, type)
+  VALUES (?, ?, ?)
+  `,
+  [
+    "User Logged In",
+    user.email,
+    "Success",
+  ]
+);
+
     res.json({
       token,
       user: {
