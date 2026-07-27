@@ -73,6 +73,19 @@ console.log("JWT_SECRET =", process.env.JWT_SECRET);
     console.error("LOGIN ERROR:", err);
     res.status(500).json({ message: "Login failed" });
   }
+   catch (err) {
+  console.error("========== LOGIN ERROR ==========");
+  console.error(err);
+  console.error("Message:", err.message);
+  console.error("Code:", err.code);
+  console.error("SQL:", err.sql);
+  console.error("Stack:", err.stack);
+
+  res.status(500).json({
+    message: err.message,
+    code: err.code,
+  });
+}
 };
 
 /* =========================
