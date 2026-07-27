@@ -36,7 +36,7 @@ export const login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
+console.log("JWT_SECRET =", process.env.JWT_SECRET);
     // ✅ JWT PAYLOAD — SIMPLE & CORRECT
     const token = jwt.sign(
       {
