@@ -69,9 +69,6 @@ console.log("JWT_SECRET =", process.env.JWT_SECRET);
         role: user.role,
       },
     });
-  } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    res.status(500).json({ message: "Login failed" });
   }
    catch (err) {
   console.error("========== LOGIN ERROR ==========");
