@@ -47,7 +47,7 @@ console.log("JWT_SECRET =", process.env.JWT_SECRET);
       { expiresIn: "1d" }
     );
 
-    await db.execute(
+   /* await db.execute(
   `
   INSERT INTO system_logs (event, user, type)
   VALUES (?, ?, ?)
@@ -58,6 +58,7 @@ console.log("JWT_SECRET =", process.env.JWT_SECRET);
     "Success",
   ]
 );
+*/
 
     res.json({
       token,
