@@ -11,7 +11,7 @@ export default function InstructorLayout() {
     { label: "Create Assessment", to: "/instructor/builder" },
     { label: "Manage Assessments", to: "/instructor/tests" },
     { label: "AI Question Review", to: "/instructor/ai-questions" },
-    { label: "Analytics", to: "/instructor/analytics/1" }, // assessmentId required
+    { label: "Analytics", to: "/instructor/dashboard" }, // assessmentId required
     { label: "Profile", to: "/instructor/profile" },
   ];
 

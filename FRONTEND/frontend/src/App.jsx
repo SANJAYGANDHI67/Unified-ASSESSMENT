@@ -99,9 +99,14 @@ export default function App() {
 
           {/* ANALYTICS */}
           <Route
-            path="analytics/:assessmentId"
-            element={<InstructorAnalytics />}
-          />
+  path="analytics"
+  element={<InstructorAnalytics />}
+/>
+
+<Route
+  path="analytics/:assessmentId"
+  element={<InstructorAnalytics />}
+/>
 
           <Route path="profile" element={<InstructorProfile />} />
         </Route>

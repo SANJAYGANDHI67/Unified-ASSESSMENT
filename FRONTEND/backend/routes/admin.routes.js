@@ -1,11 +1,39 @@
-import express from 'express';
-import { authenticate, authorize } from '../middleware/auth.middleware.js';
-import * as adminController from '../controllers/admin.controller.js';
+import express from "express";
+
+import {
+  authenticate,
+  authorize,
+} from "../middleware/auth.middleware.js";
+
+import * as adminController from "../controllers/admin.controller.js";
 
 const router = express.Router();
 
-router.get('/stats', authenticate, authorize('admin'), adminController.getStats);
-router.get('/users', authenticate, authorize('admin'), adminController.getUsers);
+/* =====================================================
+   ADMIN DASHBOARD
+===================================================== */
+
+router.get(
+  "/stats",
+  authenticate,
+  authorize("admin"),
+  adminController.getStats
+);
+
+/* =====================================================
+   USERS
+===================================================== */
+
+router.get(
+  "/users",
+  authenticate,
+  authorize("admin"),
+  adminController.getUsers
+);
+
+/* =====================================================
+   SYSTEM LOGS
+===================================================== */
 
 router.get(
   "/logs",
@@ -14,5 +42,22 @@ router.get(
   adminController.getLogs
 );
 
-export default router;
+/* =====================================================
+   PLATFORM SETTINGS
+===================================================== */
 
+router.get(
+  "/settings",
+  authenticate,
+  authorize("admin"),
+  adminController.getSettings
+);
+
+router.put(
+  "/settings",
+  authenticate,
+  authorize("admin"),
+  adminController.updateSettings
+);
+
+export default router;

@@ -136,3 +136,183 @@ export const getLogs = async (
     },
   };
 };
+
+/* =====================================================
+   GET PLATFORM SETTINGS
+===================================================== */
+/* =====================================================
+   GET PLATFORM SETTINGS
+===================================================== */
+export const getSettings = async () => {
+  const [rows] = await pool.execute(`
+    SELECT
+      id,
+      platform_name,
+      institute_email,
+      default_role,
+      ai_generation,
+      ai_evaluation,
+      auto_publish,
+      max_attempts,
+      assessment_alerts,
+      user_activity_alerts,
+      ai_evaluation_alerts,
+      security_alerts,
+      updated_at
+    FROM platform_settings
+    WHERE id = 1
+    LIMIT 1
+  `);
+
+  /* ==========================================
+     CREATE DEFAULT SETTINGS IF NOT EXISTS
+  ========================================== */
+
+  if (rows.length === 0) {
+    await pool.execute(`
+      INSERT INTO platform_settings (
+        id,
+        platform_name,
+        institute_email,
+        default_role,
+        ai_generation,
+        ai_evaluation,
+        auto_publish,
+        max_attempts,
+        assessment_alerts,
+        user_activity_alerts,
+        ai_evaluation_alerts,
+        security_alerts
+      )
+      VALUES (
+        1,
+        'Unified Assessment Platform',
+        'admin@college.edu',
+        'student',
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1
+      )
+    `);
+  }
+
+  const [settingsRows] = await pool.execute(`
+    SELECT
+      id,
+      platform_name,
+      institute_email,
+      default_role,
+      ai_generation,
+      ai_evaluation,
+      auto_publish,
+      max_attempts,
+      assessment_alerts,
+      user_activity_alerts,
+      ai_evaluation_alerts,
+      security_alerts,
+      updated_at
+    FROM platform_settings
+    WHERE id = 1
+    LIMIT 1
+  `);
+
+  return settingsRows[0];
+};
+
+/* =====================================================
+   UPDATE PLATFORM SETTINGS
+===================================================== */
+export const updateSettings = async (settings) => {
+  const {
+    platformName,
+    instituteEmail,
+    defaultRole,
+    system,
+    alerts,
+  } = settings;
+
+  /* =========================
+     NORMALIZE ROLE
+  ========================= */
+  const allowedRoles = [
+  "admin",
+  "instructor",
+  "student",
+];
+
+const safeRole = allowedRoles.includes(
+  String(defaultRole).toLowerCase()
+)
+  ? String(defaultRole).toLowerCase()
+  : "student";
+  /* =========================
+     MAX ATTEMPTS
+  ========================= */
+  const parsedAttempts = Number(system?.maxAttempts);
+
+  const maxAttempts =
+    Number.isInteger(parsedAttempts) && parsedAttempts > 0
+      ? parsedAttempts
+      : 1;
+
+  /* =========================
+     UPDATE EXISTING ROW
+  ========================= */
+  const [result] = await pool.execute(
+    `
+    UPDATE platform_settings
+    SET
+      platform_name = ?,
+      institute_email = ?,
+      default_role = ?,
+      ai_generation = ?,
+      ai_evaluation = ?,
+      auto_publish = ?,
+      max_attempts = ?,
+      assessment_alerts = ?,
+      user_activity_alerts = ?,
+      ai_evaluation_alerts = ?,
+      security_alerts = ?
+    WHERE id = 1
+    `,
+    [
+      platformName?.trim() ||
+        "Unified Assessment Platform",
+
+      instituteEmail?.trim() ||
+        "admin@college.edu",
+
+      safeRole,
+
+      system?.aiGeneration ? 1 : 0,
+      system?.aiEvaluation ? 1 : 0,
+      system?.autoPublish ? 1 : 0,
+
+      maxAttempts,
+
+      alerts?.assessment ? 1 : 0,
+      alerts?.userActivity ? 1 : 0,
+      alerts?.aiEvaluation ? 1 : 0,
+      alerts?.security ? 1 : 0,
+    ]
+  );
+
+  /* =========================
+     SAFETY CHECK
+  ========================= */
+  if (result.affectedRows === 0) {
+    throw new Error(
+      "Platform settings row with id = 1 was not found"
+    );
+  }
+
+  /* =========================
+     RETURN SAVED SETTINGS
+  ========================= */
+  return await getSettings();
+};
