@@ -7,9 +7,11 @@
 ![Backend](https://img.shields.io/badge/Backend-Node.js-green)
 ![Database](https://img.shields.io/badge/Database-MySQL-orange)
 ![AI](https://img.shields.io/badge/AI-Google%20Gemini-red)
-
 ---
+## 🌐 Live Demo
 
+🚀 **[Visit Unified Assessment Platform](https://unified-assessment-ob8ka1b6i-gandhi1.vercel.app/)**
+---
 # 📖 Overview
 
 Unified Assessment Platform is a full-stack web application designed to simplify the complete examination workflow for educational institutions.
