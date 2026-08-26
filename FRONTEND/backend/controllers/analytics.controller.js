@@ -10,11 +10,12 @@ export const getInstructorAnalytics = async (req, res) => {
     const analytics =
       await analyticsService.getInstructorAnalytics(instructorId);
 
-    res.json(analytics);
+    return res.json(analytics);
+
   } catch (error) {
     console.error("INSTRUCTOR ANALYTICS ERROR:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch instructor analytics",
     });
@@ -27,22 +28,38 @@ export const getInstructorAnalytics = async (req, res) => {
 export const getAssessmentAnalytics = async (req, res) => {
   try {
     const instructorId = req.user.id;
-    const { assessmentId } = req.params;
+    const assessmentId = Number(req.params.assessmentId);
 
-   
-      const analytics =
-  await analyticsService.getAssessmentAnalytics(
-    Number(assessmentId),
-    instructorId
-  );
+    if (!Number.isInteger(assessmentId) || assessmentId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid assessment ID",
+      });
+    }
 
-    res.json(analytics);
+    const analytics =
+      await analyticsService.getAssessmentAnalytics(
+        assessmentId,
+        instructorId
+      );
+
+    return res.json(analytics);
+
   } catch (error) {
-    console.error("ASSESSMENT ANALYTICS ERROR:", error);
+    console.error("=================================");
+    console.error("ASSESSMENT ANALYTICS ERROR");
+    console.error("MESSAGE:", error.message);
+    console.error("CODE:", error.code);
+    console.error("SQL:", error.sql);
+    console.error("SQL MESSAGE:", error.sqlMessage);
+    console.error("STACK:", error.stack);
+    console.error("=================================");
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch assessment analytics",
+      message: error.message,
+      code: error.code || null,
+      sqlMessage: error.sqlMessage || null,
     });
   }
 };

@@ -1,123 +1,214 @@
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
-
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../lib/api";
 
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
-
-
-  
-  export default function AssessmentAnalytics() {
-
+export default function InstructorAnalytics() {
   const { assessmentId } = useParams();
   const navigate = useNavigate();
 
+  /* =====================================================
+     STATE
+  ===================================================== */
+
   const [data, setData] = useState({
     assessment: null,
-    metrics: {
-      totalAttempts: 0,
-      evaluated: 0,
+
+    kpis: {
+      studentsAttempted: 0,
       averageScore: 0,
-      completionRate: 0,
+      highestScore: 0,
+      lowestScore: 0,
+      passPercentage: 0,
+      failPercentage: 0,
+      pendingEvaluations: 0,
     },
-    scoreDistribution: [],
-    questionTypes: [],
-    students: [],
-    questions: [],
+
+    questionAnalytics: [],
+    topStudents: [],
   });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  /* =====================================================
+     FETCH ANALYTICS
+  ===================================================== */
+
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      setError("");
+
+      if (!assessmentId) {
+        setError("Assessment ID is missing.");
+        return;
+      }
 
       const res = await api.get(`/analytics/${assessmentId}`);
 
+      const d = res?.data || {};
+
       setData({
-        assessment: res.data?.assessment || null,
-        metrics: res.data?.metrics || {
-          totalAttempts: 0,
-          evaluated: 0,
-          averageScore: 0,
-          completionRate: 0,
+        assessment: d.assessment || null,
+
+        kpis: {
+          studentsAttempted:
+            d.kpis?.studentsAttempted ?? 0,
+
+          averageScore:
+            d.kpis?.averageScore ?? 0,
+
+          highestScore:
+            d.kpis?.highestScore ?? 0,
+
+          lowestScore:
+            d.kpis?.lowestScore ?? 0,
+
+          passPercentage:
+            d.kpis?.passPercentage ?? 0,
+
+          failPercentage:
+            d.kpis?.failPercentage ?? 0,
+
+          pendingEvaluations:
+            d.kpis?.pendingEvaluations ?? 0,
         },
-        scoreDistribution: res.data?.scoreDistribution || [],
-        questionTypes: res.data?.questionTypes || [],
-        students: res.data?.students || [],
-        questions: res.data?.questions || [],
+
+        questionAnalytics: Array.isArray(
+          d.questionAnalytics
+        )
+          ? d.questionAnalytics
+          : [],
+
+        topStudents: Array.isArray(d.topStudents)
+          ? d.topStudents
+          : [],
       });
     } catch (err) {
-      console.error("ANALYTICS ERROR:", err);
-      setError("Failed to load assessment analytics");
+      console.error(
+        "ASSESSMENT ANALYTICS ERROR:",
+        err
+      );
+
+      console.error(
+        "API RESPONSE:",
+        err?.response?.data
+      );
+
+      setError(
+        err?.response?.data?.message ||
+          "Failed to load assessment analytics."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  if (assessmentId) {
+  /* =====================================================
+     LOAD
+  ===================================================== */
+
+  useEffect(() => {
     fetchAnalytics();
-  }
-}, [assessmentId]);
+  }, [assessmentId]);
+
+  /* =====================================================
+     LOADING
+  ===================================================== */
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-sm text-gray-500">
-          Loading analytics...
+        <div className="bg-white border rounded-xl px-8 py-6 text-center shadow-sm">
+
+          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+
+          <p className="text-sm font-medium text-gray-700">
+            Loading assessment analytics...
+          </p>
+
+          <p className="text-xs text-gray-400 mt-1">
+            Please wait
+          </p>
+
         </div>
       </div>
     );
   }
+
+  /* =====================================================
+     ERROR
+  ===================================================== */
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-6xl mx-auto bg-white rounded-xl border p-8 text-center">
-          <p className="text-red-600">{error}</p>
+      <div className="min-h-screen bg-gray-50 p-6">
 
-          <button
-            onClick={() => navigate("/instructor/tests")}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-          >
-            Back to Assessments
-          </button>
+        <div className="max-w-5xl mx-auto">
+
+          <div className="bg-white border border-red-100 rounded-xl p-10 text-center shadow-sm">
+
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xl">
+              !
+            </div>
+
+            <h1 className="text-lg font-semibold text-gray-900">
+              Unable to load analytics
+            </h1>
+
+            <p className="text-sm text-red-600 mt-2">
+              {error}
+            </p>
+
+            <div className="flex justify-center gap-3 mt-6">
+
+              <button
+                onClick={fetchAnalytics}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
+                Retry
+              </button>
+
+              <button
+                onClick={() =>
+                  navigate("/instructor/tests")
+                }
+                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+              >
+                Back to Assessments
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
     );
   }
+
+  /* =====================================================
+     MAIN
+  ===================================================== */
 
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* ================= HEADER ================= */}
-      <div className="bg-white border-b">
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
+      <header className="bg-white border-b">
+
         <div className="max-w-7xl mx-auto px-6 py-5">
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
             <div>
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+
+              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+
                 <button
                   onClick={() =>
                     navigate("/instructor/tests")
@@ -130,6 +221,7 @@ import {
                 <span>/</span>
 
                 <span>Analytics</span>
+
               </div>
 
               <h1 className="text-2xl font-bold text-gray-900">
@@ -140,6 +232,7 @@ import {
                 {data.assessment?.title ||
                   "Assessment performance overview"}
               </p>
+
             </div>
 
             <div className="flex gap-3">
@@ -153,63 +246,86 @@ import {
                 Back
               </button>
 
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-              >
-                Export Report
-              </button>
-
             </div>
+
           </div>
 
         </div>
-      </div>
 
-      {/* ================= MAIN ================= */}
+      </header>
+
+      {/* =================================================
+          MAIN
+      ================================================= */}
+
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
 
-        {/* ================= ASSESSMENT INFO ================= */}
-        <div className="bg-white border rounded-xl p-5">
+        {/* =================================================
+            ASSESSMENT OVERVIEW
+        ================================================= */}
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
+        <div className="bg-white border rounded-xl">
 
-            <InfoItem
-              label="Assessment"
-              value={data.assessment?.title || "—"}
-            />
+          <SectionHeader
+            title="Assessment Overview"
+            subtitle="Basic assessment information"
+          />
 
-            <InfoItem
-              label="Questions"
-              value={data.assessment?.questions ?? "—"}
-            />
+          <div className="px-6 pb-6">
 
-            <InfoItem
-              label="Total Marks"
-              value={data.assessment?.total_marks ?? "—"}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
 
-            <InfoItem
-              label="Duration"
-              value={
-                data.assessment?.duration
-                  ? `${data.assessment.duration} min`
-                  : "—"
-              }
-            />
+              <InfoItem
+                label="Assessment"
+                value={
+                  data.assessment?.title || "—"
+                }
+              />
 
-            <InfoItem
-              label="Status"
-              value={data.assessment?.status || "—"}
-            />
+              <InfoItem
+                label="Questions"
+                value={
+                  data.assessment?.questions ?? "—"
+                }
+              />
+
+              <InfoItem
+                label="Total Marks"
+                value={
+                  data.assessment?.total_marks ?? "—"
+                }
+              />
+
+              <InfoItem
+                label="Duration"
+                value={
+                  data.assessment?.duration
+                    ? `${data.assessment.duration} min`
+                    : "—"
+                }
+              />
+
+              <InfoItem
+                label="Status"
+                value={
+                  data.assessment?.status || "—"
+                }
+              />
+
+            </div>
 
           </div>
 
         </div>
 
-        {/* ================= KEY METRICS ================= */}
+        {/* =================================================
+            KEY METRICS
+        ================================================= */}
+
         <div>
 
           <div className="mb-4">
+
             <h2 className="text-lg font-semibold text-gray-900">
               Key Metrics
             </h2>
@@ -217,170 +333,51 @@ import {
             <p className="text-sm text-gray-500">
               Current assessment performance
             </p>
+
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
             <MetricCard
-              title="Total Attempts"
-              value={data.metrics.totalAttempts}
-              description="Student submissions"
+              title="Students Attempted"
+              value={data.kpis.studentsAttempted}
+              description="Students who attempted"
               icon="👥"
               iconStyle="bg-blue-50 text-blue-600"
             />
 
             <MetricCard
-              title="Evaluated"
-              value={data.metrics.evaluated}
-              description="Completed evaluations"
-              icon="✓"
-              iconStyle="bg-green-50 text-green-600"
-            />
-
-            <MetricCard
               title="Average Score"
-              value={`${data.metrics.averageScore}%`}
+              value={`${data.kpis.averageScore}%`}
               description="Overall performance"
               icon="★"
               iconStyle="bg-purple-50 text-purple-600"
             />
 
             <MetricCard
-              title="Completion Rate"
-              value={`${data.metrics.completionRate}%`}
-              description="Assessment completion"
-              icon="↗"
+              title="Pass Rate"
+              value={`${data.kpis.passPercentage}%`}
+              description="Students who passed"
+              icon="✓"
+              iconStyle="bg-green-50 text-green-600"
+            />
+
+            <MetricCard
+              title="Pending Evaluations"
+              value={data.kpis.pendingEvaluations}
+              description="Awaiting evaluation"
+              icon="⏳"
               iconStyle="bg-orange-50 text-orange-600"
             />
 
           </div>
-        </div>
-
-        {/* ================= CHARTS ================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* SCORE DISTRIBUTION */}
-          <div className="lg:col-span-2 bg-white border rounded-xl p-6">
-
-            <div className="mb-5">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Score Distribution
-              </h2>
-
-              <p className="text-sm text-gray-500">
-                Student performance across score ranges
-              </p>
-            </div>
-
-            <div className="h-72">
-
-              {data.scoreDistribution.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={data.scoreDistribution}
-                    margin={{
-                      top: 10,
-                      right: 10,
-                      left: 0,
-                      bottom: 5,
-                    }}
-                  >
-
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                    />
-
-                    <XAxis
-                      dataKey="range"
-                      tick={{ fontSize: 12 }}
-                    />
-
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fontSize: 12 }}
-                    />
-
-                    <Tooltip />
-
-                    <Bar
-                      dataKey="count"
-                      fill="#2563eb"
-                      radius={[6, 6, 0, 0]}
-                    />
-
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyState text="No score distribution data available" />
-              )}
-
-            </div>
-          </div>
-
-          {/* QUESTION TYPES */}
-          <div className="bg-white border rounded-xl p-6">
-
-            <div className="mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Question Types
-              </h2>
-
-              <p className="text-sm text-gray-500">
-                Question distribution
-              </p>
-            </div>
-
-            <div className="h-72">
-
-              {data.questionTypes.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-
-                    <Pie
-                      data={data.questionTypes}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="45%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={3}
-                    >
-                      {data.questionTypes.map(
-                        (_, index) => (
-                          <Cell
-                            key={index}
-                            fill={
-                              PIE_COLORS[
-                                index %
-                                  PIE_COLORS.length
-                              ]
-                            }
-                          />
-                        )
-                      )}
-                    </Pie>
-
-                    <Tooltip />
-
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                    />
-
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyState text="No question type data available" />
-              )}
-
-            </div>
-          </div>
 
         </div>
 
-        {/* ================= STUDENT PERFORMANCE ================= */}
+        {/* =================================================
+            STUDENT PERFORMANCE
+        ================================================= */}
+
         <div className="bg-white border rounded-xl">
 
           <SectionHeader
@@ -393,6 +390,7 @@ import {
             <table className="w-full text-sm">
 
               <thead>
+
                 <tr className="border-t border-b bg-gray-50 text-gray-500">
 
                   <th className="text-left px-6 py-3 font-medium">
@@ -416,84 +414,118 @@ import {
                   </th>
 
                 </tr>
+
               </thead>
 
               <tbody>
 
-                {data.students.length > 0 ? (
-                  data.students.map((student) => (
+                {data.topStudents.length > 0 ? (
 
-                    <tr
-                      key={student.id}
-                      className="border-b last:border-0 hover:bg-gray-50"
-                    >
+                  data.topStudents.map(
+                    (student, index) => (
 
-                      <td className="px-6 py-4">
+                      <tr
+                        key={
+                          student.id ||
+                          student.submission_id ||
+                          index
+                        }
+                        className="border-b last:border-0 hover:bg-gray-50"
+                      >
 
-                        <div className="font-medium text-gray-900">
-                          {student.name ||
-                            student.student_name ||
-                            "Unknown Student"}
-                        </div>
+                        {/* STUDENT */}
 
-                        {student.email && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {student.email}
+                        <td className="px-6 py-4">
+
+                          <div className="font-medium text-gray-900">
+                            {student.name ||
+                              student.student_name ||
+                              "Unknown Student"}
                           </div>
-                        )}
 
-                      </td>
+                          {student.email && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {student.email}
+                            </div>
+                          )}
 
-                      <td className="px-6 py-4">
-                        <StatusBadge
-                          status={student.status}
-                        />
-                      </td>
+                        </td>
 
-                      <td className="px-6 py-4 font-medium">
-                        {student.score !== null &&
-                        student.score !== undefined
-                          ? student.score
-                          : "—"}
-                      </td>
+                        {/* STATUS */}
 
-                      <td className="px-6 py-4">
+                        <td className="px-6 py-4">
 
-                        {student.percentage !== null &&
-                        student.percentage !== undefined
-                          ? `${student.percentage}%`
-                          : "—"}
+                          <StatusBadge
+                            status={student.status}
+                          />
 
-                      </td>
+                        </td>
 
-                      <td className="px-6 py-4 text-right">
+                        {/* SCORE */}
 
-                        {student.id && (
-                          <button
-                            onClick={() =>
-                              
-                              navigate(`/instructor/evaluate/submission/${student.id}`)
-                            }
-                            className="text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            View
-                          </button>
-                        )}
+                        <td className="px-6 py-4 font-medium">
 
-                      </td>
+                          {student.score !== null &&
+                          student.score !== undefined
+                            ? student.score
+                            : "—"}
 
-                    </tr>
+                        </td>
 
-                  ))
+                        {/* PERCENTAGE */}
+
+                        <td className="px-6 py-4">
+
+                          {student.percentage !== null &&
+                          student.percentage !== undefined
+                            ? `${student.percentage}%`
+                            : "—"}
+
+                        </td>
+
+                        {/* ACTION */}
+
+                        <td className="px-6 py-4 text-right">
+
+                          {(student.id ||
+                            student.submission_id) && (
+
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/instructor/evaluate/submission/${
+                                    student.submission_id ||
+                                    student.id
+                                  }`
+                                )
+                              }
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              View
+                            </button>
+
+                          )}
+
+                        </td>
+
+                      </tr>
+
+                    )
+                  )
+
                 ) : (
+
                   <tr>
+
                     <td
                       colSpan="5"
                       className="px-6 py-12 text-center text-gray-400"
                     >
                       No student performance data available
                     </td>
+
                   </tr>
+
                 )}
 
               </tbody>
@@ -501,9 +533,13 @@ import {
             </table>
 
           </div>
+
         </div>
 
-        {/* ================= QUESTION PERFORMANCE ================= */}
+        {/* =================================================
+            QUESTION PERFORMANCE
+        ================================================= */}
+
         <div className="bg-white border rounded-xl">
 
           <SectionHeader
@@ -516,6 +552,7 @@ import {
             <table className="w-full text-sm">
 
               <thead>
+
                 <tr className="border-t border-b bg-gray-50 text-gray-500">
 
                   <th className="text-left px-6 py-3 font-medium">
@@ -539,61 +576,94 @@ import {
                   </th>
 
                 </tr>
+
               </thead>
 
               <tbody>
 
-                {data.questions.length > 0 ? (
-                  data.questions.map((question, index) => (
+                {data.questionAnalytics.length > 0 ? (
 
-                    <tr
-                      key={question.id || index}
-                      className="border-b last:border-0 hover:bg-gray-50"
-                    >
+                  data.questionAnalytics.map(
+                    (question, index) => (
 
-                      <td className="px-6 py-4">
+                      <tr
+                        key={
+                          question.id || index
+                        }
+                        className="border-b last:border-0 hover:bg-gray-50"
+                      >
 
-                        <div className="font-medium text-gray-900">
-                          {question.title ||
-                            question.question ||
-                            `Question ${index + 1}`}
-                        </div>
+                        {/* QUESTION */}
 
-                      </td>
+                        <td className="px-6 py-4">
 
-                      <td className="px-6 py-4">
-                        {question.attempts ?? "—"}
-                      </td>
+                          <div className="font-medium text-gray-900">
 
-                      <td className="px-6 py-4">
-                        {question.correct ?? "—"}
-                      </td>
+                            {question.title ||
+                              question.question ||
+                              `Question ${index + 1}`}
 
-                      <td className="px-6 py-4 font-medium">
-                        {question.accuracy !== null &&
-                        question.accuracy !== undefined
-                          ? `${question.accuracy}%`
-                          : "—"}
-                      </td>
+                          </div>
 
-                      <td className="px-6 py-4">
-                        <DifficultyBadge
-                          value={question.difficulty}
-                        />
-                      </td>
+                        </td>
 
-                    </tr>
+                        {/* ATTEMPTS */}
 
-                  ))
+                        <td className="px-6 py-4">
+
+                          {question.attempts ?? "—"}
+
+                        </td>
+
+                        {/* CORRECT */}
+
+                        <td className="px-6 py-4">
+
+                          {question.correct ?? "—"}
+
+                        </td>
+
+                        {/* ACCURACY */}
+
+                        <td className="px-6 py-4 font-medium">
+
+                          {question.accuracy !== null &&
+                          question.accuracy !== undefined
+                            ? `${question.accuracy}%`
+                            : "—"}
+
+                        </td>
+
+                        {/* DIFFICULTY */}
+
+                        <td className="px-6 py-4">
+
+                          <DifficultyBadge
+                            value={
+                              question.difficulty
+                            }
+                          />
+
+                        </td>
+
+                      </tr>
+
+                    )
+                  )
+
                 ) : (
+
                   <tr>
+
                     <td
                       colSpan="5"
                       className="px-6 py-12 text-center text-gray-400"
                     >
                       No question performance data available
                     </td>
+
                   </tr>
+
                 )}
 
               </tbody>
@@ -601,20 +671,23 @@ import {
             </table>
 
           </div>
+
         </div>
 
       </main>
+
     </div>
   );
 }
 
 /* =====================================================
-   SMALL COMPONENTS
+   INFO ITEM
 ===================================================== */
 
 function InfoItem({ label, value }) {
   return (
     <div>
+
       <p className="text-xs text-gray-500 mb-1">
         {label}
       </p>
@@ -622,9 +695,14 @@ function InfoItem({ label, value }) {
       <p className="text-sm font-semibold text-gray-900 truncate">
         {value}
       </p>
+
     </div>
   );
 }
+
+/* =====================================================
+   METRIC CARD
+===================================================== */
 
 function MetricCard({
   title,
@@ -639,6 +717,7 @@ function MetricCard({
       <div className="flex items-start justify-between">
 
         <div>
+
           <p className="text-sm text-gray-500">
             {title}
           </p>
@@ -650,6 +729,7 @@ function MetricCard({
           <p className="text-xs text-gray-400 mt-1">
             {description}
           </p>
+
         </div>
 
         <div
@@ -664,7 +744,14 @@ function MetricCard({
   );
 }
 
-function SectionHeader({ title, subtitle }) {
+/* =====================================================
+   SECTION HEADER
+===================================================== */
+
+function SectionHeader({
+  title,
+  subtitle,
+}) {
   return (
     <div className="px-6 py-5">
 
@@ -679,6 +766,10 @@ function SectionHeader({ title, subtitle }) {
     </div>
   );
 }
+
+/* =====================================================
+   STATUS BADGE
+===================================================== */
 
 function StatusBadge({ status }) {
   const normalized = String(status || "")
@@ -721,12 +812,21 @@ function StatusBadge({ status }) {
   );
 }
 
+/* =====================================================
+   DIFFICULTY BADGE
+===================================================== */
+
 function DifficultyBadge({ value }) {
   if (!value) {
-    return <span className="text-gray-400">—</span>;
+    return (
+      <span className="text-gray-400">
+        —
+      </span>
+    );
   }
 
-  const difficulty = String(value).toLowerCase();
+  const difficulty =
+    String(value).toLowerCase();
 
   if (difficulty === "easy") {
     return (
@@ -750,20 +850,3 @@ function DifficultyBadge({ value }) {
     </span>
   );
 }
-
-function EmptyState({ text }) {
-  return (
-    <div className="h-full flex items-center justify-center text-sm text-gray-400">
-      {text}
-    </div>
-  );
-}
-
-/* ================= COLORS ================= */
-
-const PIE_COLORS = [
-  "#2563eb",
-  "#8b5cf6",
-  "#10b981",
-  "#f59e0b",
-];

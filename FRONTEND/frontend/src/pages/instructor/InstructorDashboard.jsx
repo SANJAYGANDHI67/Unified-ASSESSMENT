@@ -415,7 +415,7 @@ export default function InstructorDashboard() {
                         <button
                           onClick={() =>
                             
-                              navigate(`/instructor/analytics/${a.id}`)
+                               navigate(`/instructor/analytics/${a.id}`)
                             
                           }
                           className="text-xs text-green-600 hover:underline"

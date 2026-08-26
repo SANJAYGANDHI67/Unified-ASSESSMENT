@@ -56,6 +56,13 @@ export default function ManageTests() {
 const handleEvaluate = (id) => {
   navigate(`/instructor/evaluate/${id}`);
 };
+
+/* =========================
+   VIEW ANALYTICS
+========================= */
+const handleAnalytics = (id) => {
+  navigate(`/instructor/analytics/${id}`);
+};
   /* =========================
      DELETE ASSESSMENT
   ========================= */
@@ -145,6 +152,14 @@ const handleEvaluate = (id) => {
   >
     Evaluate
   </Button>
+
+  {a.status === "published" && (
+    <Button
+      onClick={() => handleAnalytics(a.id)}
+    >
+      Analytics
+    </Button>
+  )}
 
   <Button
     variant="destructive"
