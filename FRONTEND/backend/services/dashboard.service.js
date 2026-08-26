@@ -1,16 +1,5 @@
 import pool from "../config/db.js";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+
 /* ======================
    STUDENT DASHBOARD
    (SAFE – NO EVALUATION DEPENDENCY)
