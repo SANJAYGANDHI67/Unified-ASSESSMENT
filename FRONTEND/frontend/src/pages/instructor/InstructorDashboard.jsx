@@ -3,21 +3,21 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 import api from "../../lib/api";
 
-// Recharts
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
-// ✅ FIXED PATH (THIS WAS THE BUG)
-import StatCard from "../../components/common/StatCard";
-
 /* ======================
-   INSTRUCTOR DASHBOARD (POLISHED)
+   INSTRUCTOR DASHBOARD
 ====================== */
 
 export default function InstructorDashboard() {
@@ -35,11 +35,17 @@ export default function InstructorDashboard() {
 
   const [loading, setLoading] = useState(true);
 
+  /* ======================
+     FETCH DATA
+  ====================== */
+
   useEffect(() => {
     async function fetchStats() {
       try {
         setLoading(true);
+
         const res = await api.get("/dashboard/instructor");
+
         const d = res?.data || {};
 
         setStats({
@@ -47,13 +53,17 @@ export default function InstructorDashboard() {
           publishedAssessments: d.publishedAssessments ?? 0,
           pendingReview: d.pendingReview ?? 0,
           evaluated: d.evaluated ?? 0,
+
           recentAssessments: Array.isArray(d.recentAssessments)
             ? d.recentAssessments
             : [],
+
           activityData: Array.isArray(d.activityData)
             ? d.activityData
             : [],
         });
+      } catch (err) {
+        console.error("INSTRUCTOR DASHBOARD ERROR:", err);
       } finally {
         setLoading(false);
       }
@@ -62,153 +72,509 @@ export default function InstructorDashboard() {
     fetchStats();
   }, [location.pathname]);
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen space-y-8">
+  /* ======================
+     ASSESSMENT STATUS
+  ====================== */
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Instructor Dashboard
-        </h1>
+  const draftAssessments = Math.max(
+    stats.totalAssessments - stats.publishedAssessments,
+    0
+  );
+
+  const statusData = [
+    {
+      name: "Published",
+      value: stats.publishedAssessments,
+    },
+    {
+      name: "Draft",
+      value: draftAssessments,
+    },
+  ];
+
+  const COLORS = ["#2563eb", "#9333ea"];
+
+  return (
+    <div className="space-y-8">
+
+      {/* ======================
+          HEADER
+      ====================== */}
+
+      <div className="flex items-center justify-between">
+
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Instructor Dashboard
+          </h2>
+
+          <p className="text-sm text-gray-600 mt-1">
+            Manage assessments, evaluations and student performance
+          </p>
+        </div>
 
         <button
           onClick={() => navigate("/instructor/profile")}
-          className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg shadow-sm hover:shadow"
+          className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg shadow-sm hover:bg-gray-50"
         >
-          <div className="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
             I
           </div>
-          Profile
+
+          <span className="text-sm font-medium">
+            Profile
+          </span>
         </button>
+
       </div>
 
-      {/* STATS */}
+      {/* ======================
+          KPI CARDS
+      ====================== */}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard
+
+        <KpiCard
           title="Total Assessments"
-          value={stats.totalAssessments}
+          value={loading ? "—" : stats.totalAssessments}
+          subtitle="Created assessments"
+          color="blue"
         />
 
-        <StatCard
+        <KpiCard
           title="Published"
-          value={stats.publishedAssessments}
+          value={loading ? "—" : stats.publishedAssessments}
+          subtitle="Currently available"
+          color="green"
         />
 
-        <StatCard
+        <KpiCard
           title="Pending Review"
-          value={stats.pendingReview}
-          highlight="danger"
-          onClick={() => navigate("/instructor/ai-questions")}
+          value={loading ? "—" : stats.pendingReview}
+          subtitle="Draft assessments"
+          color="purple"
+          onClick={() =>
+            navigate("/instructor/ai-questions")
+          }
         />
 
-        <StatCard
+        <KpiCard
           title="Evaluated"
-          value={stats.evaluated}
-          highlight="success"
+          value={loading ? "—" : stats.evaluated}
+          subtitle="Student submissions"
+          color="orange"
         />
+
       </div>
 
-      {/* CHART */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="font-semibold text-lg mb-1">
-          Assessment Activity
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          AI-assisted evaluation trends over time
-        </p>
+      {/* ======================
+          CHART SECTION
+      ====================== */}
 
-        <div className="h-56">
-          {stats.activityData.length ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.activityData}>
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#2563eb"
-                  strokeWidth={3}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              No activity data
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ======================
+            ASSESSMENT ACTIVITY
+        ====================== */}
+
+        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
+
+          <h3 className="text-lg font-semibold text-gray-900">
+            Assessment Activity
+          </h3>
+
+          <p className="text-sm text-gray-500 mb-4">
+            Monthly student submission activity
+          </p>
+
+          <div className="h-64">
+
+            {stats.activityData.length > 0 ? (
+
+              <ResponsiveContainer width="100%" height="100%">
+
+                <BarChart data={stats.activityData}>
+
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12 }}
+                  />
+
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 12 }}
+                  />
+
+                  <Tooltip />
+
+                  <Bar
+                    dataKey="count"
+                    name="Submissions"
+                    fill="#2563eb"
+                    radius={[4, 4, 0, 0]}
+                  />
+
+                </BarChart>
+
+              </ResponsiveContainer>
+
+            ) : (
+
+              <div className="flex items-center justify-center h-full text-gray-400">
+                No activity data available
+              </div>
+
+            )}
+
+          </div>
+
+        </div>
+
+        {/* ======================
+            ASSESSMENT STATUS
+        ====================== */}
+
+        <div className="bg-white rounded-lg shadow p-6">
+
+          <h3 className="text-lg font-semibold text-gray-900">
+            Assessment Status
+          </h3>
+
+          <p className="text-sm text-gray-500">
+            Current assessment distribution
+          </p>
+
+          <div className="h-64">
+
+            {stats.totalAssessments > 0 ? (
+
+              <ResponsiveContainer width="100%" height="100%">
+
+                <PieChart>
+
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+
+                    {statusData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index]}
+                      />
+                    ))}
+
+                  </Pie>
+
+                  <Tooltip />
+
+                  <Legend
+                    verticalAlign="bottom"
+                    iconType="circle"
+                  />
+
+                </PieChart>
+
+              </ResponsiveContainer>
+
+            ) : (
+
+              <div className="flex items-center justify-center h-full text-gray-400">
+                No assessment data
+              </div>
+
+            )}
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ======================
+          LOWER SECTION
+      ====================== */}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* ======================
+            EVALUATION OVERVIEW
+        ====================== */}
+
+        <div className="bg-white rounded-lg shadow p-6">
+
+          <h3 className="text-lg font-semibold text-gray-900">
+            Evaluation Overview
+          </h3>
+
+          <p className="text-sm text-gray-500 mb-6">
+            Current assessment and evaluation statistics
+          </p>
+
+          <ProgressRow
+            label="Published Assessments"
+            value={stats.publishedAssessments}
+            total={stats.totalAssessments}
+          />
+
+          <ProgressRow
+            label="Draft Assessments"
+            value={draftAssessments}
+            total={stats.totalAssessments}
+          />
+
+          <ProgressRow
+            label="Evaluated Submissions"
+            value={stats.evaluated}
+            total={stats.evaluated}
+          />
+
+        </div>
+
+        {/* ======================
+            RECENT ASSESSMENTS
+        ====================== */}
+
+        <div className="bg-white rounded-lg shadow p-6">
+
+          <div className="flex items-center justify-between mb-5">
+
+            <div>
+
+              <h3 className="text-lg font-semibold text-gray-900">
+                Recent Assessments
+              </h3>
+
+              <p className="text-sm text-gray-500">
+                Recently created assessments
+              </p>
+
             </div>
+
+            <button
+              onClick={() => navigate("/instructor/tests")}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              View All
+            </button>
+
+          </div>
+
+          {stats.recentAssessments.length > 0 ? (
+
+            <div className="space-y-4">
+
+              {stats.recentAssessments
+                .slice(0, 5)
+                .map((a) => (
+
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between border-b pb-3 last:border-b-0"
+                  >
+
+                    <div>
+
+                      <p className="font-medium text-gray-800">
+                        {a.title}
+                      </p>
+
+                      <p className="text-xs text-gray-500 mt-1">
+                        {a.total_marks} marks
+                      </p>
+
+                    </div>
+
+                    <div className="flex items-center gap-4">
+
+                      <StatusBadge
+                        status={a.status}
+                      />
+
+                      {/* DATABASE USES LOWERCASE */}
+
+                      {a.status === "draft" && (
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/instructor/builder/${a.id}`
+                            )
+                          }
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Continue
+                        </button>
+                      )}
+
+                      {a.status === "published" && (
+                        <button
+                          onClick={() =>
+                            
+                              navigate(`/instructor/analytics/${a.id}`)
+                            
+                          }
+                          className="text-xs text-green-600 hover:underline"
+                        >
+                          Analytics
+                        </button>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                ))}
+
+            </div>
+
+          ) : (
+
+            <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+              No assessments available
+            </div>
+
           )}
-        </div>
-      </div>
 
-      {/* RECENT ASSESSMENTS */}
-      <div className="bg-white rounded-xl shadow p-6">
-        <div className="flex justify-between mb-4">
-          <h2 className="font-semibold text-lg">
-            Recent Assessments
-          </h2>
-
-          <button
-            onClick={() => navigate("/instructor/tests")}
-            className="text-blue-600 hover:underline text-sm"
-          >
-            View All
-          </button>
         </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-500 border-b">
-              <th className="py-2">#</th>
-              <th>Title</th>
-              <th>Marks</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {stats.recentAssessments.map((a, i) => (
-              <tr
-                key={a.id}
-                className="border-b hover:bg-gray-50"
-              >
-                <td>{i + 1}</td>
-                <td className="font-medium">{a.title}</td>
-                <td>{a.total_marks}</td>
-                <td>
-                  <span className="px-3 py-1 text-xs rounded-full bg-gray-100">
-                    {a.status}
-                  </span>
-                </td>
-                <td>
-                  {a.status === "DRAFT" && (
-                    <button
-                      onClick={() =>
-                        navigate(`/instructor/builder/${a.id}`)
-                      }
-                      className="text-blue-600 text-xs hover:underline"
-                    >
-                      Continue
-                    </button>
-                  )}
-
-                  {a.status === "PUBLISHED" && (
-                    <button
-                      onClick={() =>
-                        navigate(`/instructor/analytics/${a.id}`)
-                      }
-                      className="text-green-600 text-xs hover:underline"
-                    >
-                      Analytics
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
     </div>
+  );
+}
+
+/* =================================================
+   KPI CARD
+================================================= */
+
+function KpiCard({
+  title,
+  value,
+  subtitle,
+  color,
+  onClick,
+}) {
+  const colorMap = {
+    blue: "bg-blue-50 text-blue-700",
+    purple: "bg-purple-50 text-purple-700",
+    green: "bg-green-50 text-green-700",
+    orange: "bg-orange-50 text-orange-700",
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-white rounded-lg shadow p-5 ${
+        onClick
+          ? "cursor-pointer hover:shadow-md transition"
+          : ""
+      }`}
+    >
+
+      <div className="flex items-start justify-between">
+
+        <div>
+
+          <p className="text-sm text-gray-500">
+            {title}
+          </p>
+
+          <p
+            className={`text-3xl font-bold mt-2 px-2 inline-block ${colorMap[color]}`}
+          >
+            {value}
+          </p>
+
+          <p className="text-xs text-gray-400 mt-2">
+            {subtitle}
+          </p>
+
+        </div>
+
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorMap[color]}`}
+        >
+          •
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+/* =================================================
+   PROGRESS ROW
+================================================= */
+
+function ProgressRow({ label, value, total }) {
+
+  const percentage =
+    total > 0
+      ? Math.min((Number(value) / Number(total)) * 100, 100)
+      : 0;
+
+  return (
+    <div className="mb-6">
+
+      <div className="flex justify-between text-sm mb-2">
+
+        <span className="text-gray-700">
+          {label}
+        </span>
+
+        <span className="font-semibold text-gray-800">
+          {value}
+        </span>
+
+      </div>
+
+      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+
+        <div
+          className="h-full bg-blue-600 rounded-full transition-all"
+          style={{
+            width: `${percentage}%`,
+          }}
+        />
+
+      </div>
+
+      <p className="text-xs text-gray-400 mt-1">
+        {Math.round(percentage)}% of total
+      </p>
+
+    </div>
+  );
+}
+
+/* =================================================
+   STATUS BADGE
+================================================= */
+
+function StatusBadge({ status }) {
+
+  const styles = {
+    published:
+      "bg-green-100 text-green-700",
+
+    draft:
+      "bg-purple-100 text-purple-700",
+  };
+
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-medium ${
+        styles[status] ||
+        "bg-gray-100 text-gray-600"
+      }`}
+    >
+      {status?.toUpperCase()}
+    </span>
   );
 }

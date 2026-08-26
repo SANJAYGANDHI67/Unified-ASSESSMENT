@@ -52,6 +52,20 @@ export const createAssessment = async ({
   subject,
   syllabus_topics,
 }) => {
+  const questionConfigValue =
+    question_config === null || question_config === undefined
+      ? null
+      : typeof question_config === "string"
+      ? question_config
+      : JSON.stringify(question_config);
+
+  const syllabusTopicsValue =
+    syllabus_topics === null || syllabus_topics === undefined
+      ? null
+      : typeof syllabus_topics === "string"
+      ? syllabus_topics
+      : JSON.stringify(syllabus_topics);
+
   const [result] = await pool.execute(
     `
     INSERT INTO assessments
@@ -72,9 +86,9 @@ export const createAssessment = async ({
       description,
       total_marks,
       created_by,
-      question_config ?? null,
+      questionConfigValue,
       subject ?? null,
-      syllabus_topics ?? null,
+      syllabusTopicsValue,
     ]
   );
 
@@ -111,7 +125,15 @@ export const updateAssessment = async (assessmentId, data) => {
 
   if (data.question_config !== undefined) {
     fields.push("question_config = ?");
-    values.push(data.question_config);
+
+    const questionConfigValue =
+      data.question_config === null
+        ? null
+        : typeof data.question_config === "string"
+        ? data.question_config
+        : JSON.stringify(data.question_config);
+
+    values.push(questionConfigValue);
   }
 
   if (data.subject !== undefined) {
@@ -121,7 +143,15 @@ export const updateAssessment = async (assessmentId, data) => {
 
   if (data.syllabus_topics !== undefined) {
     fields.push("syllabus_topics = ?");
-    values.push(data.syllabus_topics);
+
+    const syllabusTopicsValue =
+      data.syllabus_topics === null
+        ? null
+        : typeof data.syllabus_topics === "string"
+        ? data.syllabus_topics
+        : JSON.stringify(data.syllabus_topics);
+
+    values.push(syllabusTopicsValue);
   }
 
   if (!fields.length) return;
@@ -135,9 +165,116 @@ export const updateAssessment = async (assessmentId, data) => {
 };
 
 export const deleteAssessment = async (assessmentId) => {
-  await pool.execute("DELETE FROM assessments WHERE id = ?", [assessmentId]);
-};
+  const connection = await pool.getConnection();
 
+  try {
+    await connection.beginTransaction();
+
+    // 1. Delete AI feedback linked to questions/submissions
+    await connection.execute(
+      `
+      DELETE FROM ai_feedback
+      WHERE question_id IN (
+        SELECT id
+        FROM questions
+        WHERE assessment_id = ?
+      )
+      OR submission_id IN (
+        SELECT id
+        FROM submissions
+        WHERE assessment_id = ?
+      )
+      `,
+      [assessmentId, assessmentId]
+    );
+
+    // 2. Delete evaluations linked to submissions
+    await connection.execute(
+      `
+      DELETE FROM evaluations
+      WHERE submission_id IN (
+        SELECT id
+        FROM submissions
+        WHERE assessment_id = ?
+      )
+      `,
+      [assessmentId]
+    );
+
+    // 3. Delete answers linked to submissions/questions
+    await connection.execute(
+      `
+      DELETE FROM answers
+      WHERE submission_id IN (
+        SELECT id
+        FROM submissions
+        WHERE assessment_id = ?
+      )
+      OR question_id IN (
+        SELECT id
+        FROM questions
+        WHERE assessment_id = ?
+      )
+      `,
+      [assessmentId, assessmentId]
+    );
+
+    // 4. Delete submissions
+    await connection.execute(
+      `
+      DELETE FROM submissions
+      WHERE assessment_id = ?
+      `,
+      [assessmentId]
+    );
+
+    // 5. Delete AI questions
+    await connection.execute(
+      `
+      DELETE FROM ai_questions
+      WHERE assessment_id = ?
+      `,
+      [assessmentId]
+    );
+
+    // 6. Delete normal questions
+    await connection.execute(
+      `
+      DELETE FROM questions
+      WHERE assessment_id = ?
+      `,
+      [assessmentId]
+    );
+
+    // 7. Finally delete the assessment
+    await connection.execute(
+      `
+      DELETE FROM assessments
+      WHERE id = ?
+      `,
+      [assessmentId]
+    );
+
+    await connection.commit();
+
+    console.log(
+      `Assessment ${assessmentId} and related data deleted successfully`
+    );
+
+  } catch (error) {
+    await connection.rollback();
+
+    console.error(
+      `Failed to delete assessment ${assessmentId}:`,
+      error
+    );
+
+    throw error;
+
+  } finally {
+    connection.release();
+  }
+};
 /* ======================
    QUESTIONS
 ====================== */

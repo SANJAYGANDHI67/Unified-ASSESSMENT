@@ -6,7 +6,6 @@ dotenv.config();
 console.log("DB CONFIG CHECK:", {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
 });
@@ -17,6 +16,12 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: Number(process.env.DB_PORT),
+
+  // TiDB Cloud requires an encrypted TLS connection
+  ssl: {
+    minVersion: "TLSv1.2",
+  },
+
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
